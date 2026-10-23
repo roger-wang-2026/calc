@@ -33,7 +33,7 @@ $('go').onclick=()=>{
  const us=[...document.querySelectorAll('#u input:checked')].map(i=>T[i.value]);
  if(!us.length){alert('请至少选择一个单元。');return}
  const n=+$('n').value;
- clearFeedback();
+ clearFeedback();clearExport();
  QS=buildPractice(us,n,$('repeat').value==='yes');
  $('status').textContent=QS.length<n
    ?`已生成 ${QS.length} / ${n} 题。当前范围在本次尝试中未能生成足量不同题目，可扩大范围或选择“允许重复”。`
@@ -71,7 +71,40 @@ $('chk').onclick=()=>{
  else showFeedback(correct,answered);
 };
 $('pa').onchange=e=>document.body.classList.toggle('pa',e.target.checked);
-$('pr').onclick=()=>{if(!QS.length){alert('请先生成题目。');return}window.print()};
+let worksheetURL=null;
+function clearExport() {
+ $('export-panel').hidden=true;$('export-link').hidden=true;
+ if(worksheetURL){URL.revokeObjectURL(worksheetURL);worksheetURL=null}
+}
+$('pr').onclick=()=>{
+ $('export-panel').hidden=false;
+ $('export-status').textContent=QS.length?'请选择下载 PDF 或系统打印。':'请先生成题目或开始一个关卡，再导出练习卷。';
+ $('export-pdf').disabled=!QS.length;$('export-print').disabled=!QS.length;
+ $('export-panel').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'nearest'});
+};
+$('export-close').onclick=()=>{$('export-panel').hidden=true};
+$('export-print').onclick=()=>{
+ if(!QS.length)return;
+ $('export-status').textContent='正在请求系统打印。如果没有出现打印窗口，请使用“下载 A4 练习卷 PDF”。';
+ try {if(typeof window.print!=='function')throw new Error('不支持打印');window.print()}
+ catch {$('export-status').textContent='当前浏览器不支持系统打印，请直接下载 PDF。'}
+};
+$('export-pdf').onclick=async()=>{
+ if(!QS.length)return;
+ const button=$('export-pdf'),snapshot=QS;
+ button.disabled=true;$('export-status').textContent='正在制作 PDF，请稍等…';
+ try {
+  const blob=await createWorksheetPDF(snapshot,{route:`${N[+$('g').value-1]}年级${$('t').value==='1'?'上':'下'}册`,spacing:mode==='adventure'?'s1':$('sp').value,columns:mode==='adventure'?2:+$('cols').value,answers:mode!=='adventure'&&$('pa').checked});
+  if(snapshot!==QS)return;
+  if(worksheetURL)URL.revokeObjectURL(worksheetURL);
+  worksheetURL=URL.createObjectURL(blob);
+  const link=$('export-link');link.href=worksheetURL;link.hidden=false;
+  const download=document.createElement('a');download.href=worksheetURL;download.download='星光算术岛-计算练习.pdf';
+  document.body.appendChild(download);download.click();download.remove();
+  $('export-status').textContent='PDF 已生成。如果没有自动下载，请点击下方链接打开预览，再通过分享菜单保存或打印。';
+ } catch {$('export-status').textContent='PDF 生成失败，请重试；也可以在 Safari 或 Chrome 中打开本页后再下载。'}
+ finally {button.disabled=!QS.length}
+};
 $('th').onclick=()=>{const r=document.documentElement,d=r.dataset.theme?r.dataset.theme=='dark':matchMedia('(prefers-color-scheme:dark)').matches;r.dataset.theme=d?'light':'dark'};
 
 let currentCertificate=null;
@@ -93,7 +126,7 @@ function renderMap() {
  $('save-note').textContent=storageAvailable?'进度保存在当前浏览器，各年级、学期分别记录。清除浏览器数据会丢失收藏。':'当前浏览器无法保存进度，本次打开期间仍可继续闯关。';
 }
 function clearSheet() {
- closeCertificate();
+ closeCertificate();clearExport();
  activeLevel=null;QS=[];clearFeedback();$('sheet').replaceChildren();$('status').textContent='';$('mission').hidden=true;
 }
 function setMode(next) {
@@ -111,7 +144,7 @@ function setMode(next) {
 function startLevel(index) {
  const stars=routeStars();
  if(!Number.isInteger(index)||!ADVENTURE_LEVELS[index]||(index>0&&!stars[index-1]))return;
- clearFeedback();
+ clearFeedback();clearExport();
  const level=ADVENTURE_LEVELS[index],pool=adventureUnits(T.filter(u=>u.g===+$('g').value&&u.t===+$('t').value),level);
  QS=buildPractice(pool,level.count,true);
  activeLevel={index,key:routeKey()};

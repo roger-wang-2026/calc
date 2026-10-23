@@ -69,3 +69,9 @@ A(5, 1, '单元名称', () => { const a = R(2, 9), b = R(2, 9); return [`${a} ×
 - 工作流：`.github/workflows/pages.yml`。仓库 Settings → Pages 的 Source 应为 GitHub Actions，自定义域名应为 `calc.yiqiqq.com`。
 - Cloudflare DNS 需要添加：类型 `CNAME`，名称 `calc`，目标 `roger-wang-2026.github.io`，初始使用“仅 DNS”（灰云）。GitHub 域名检查和证书签发成功后，在 Pages 设置开启 Enforce HTTPS。
 - `CNAME` 文件随发布包一并保留；使用 Actions 发布时仍需在 Pages 设置中配置自定义域名。
+
+## 手机打印与下载
+
+“打印 / 下载 PDF”会打开导出面板。手机可直接下载 A4 PDF，无需系统打印支持；若没有自动保存，可点击“打开 PDF 预览 / 保存”，通过文件预览的分享菜单保存或打印。微信等内置浏览器可能限制下载，此时请选择“在浏览器打开”。
+
+PDF 在本地生成，使用当前题目、列数和留白自动分页，练习卷始终保留空白作答区。自由练习勾选“附答案页”后会单独追加参考答案；冒险模式不附答案。PDF 将分数显示为括号包围的 a/b，页面使用图像嵌入以保证中文显示，不支持文本选择。

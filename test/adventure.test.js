@@ -25,12 +25,12 @@ assert.deepEqual(readAdventureProgress('{"1-1":["3",4,-1]}')['1-1'],[0,0,0,0,0,0
 // 用独立页面上下文验证真正的按钮处理器、存档恢复与奖励流程。
 function page(storage,unavailable=false) {
  const element=()=>({value:'',innerHTML:'',textContent:'',hidden:false,children:[],style:{},classList:{toggle(){},remove(){}},replaceChildren(){this.children=[];this.innerHTML=''},appendChild(child){this.children.push(child)},scrollIntoView(){},setAttribute(key,value){this[key]=value}});
- const ids=['g','t','u','n','repeat','status','sheet','cols','sp','go','chk','pa','pr','th','feedback','effects','adventure','adventure-progress','trail-fill','level-map','badge-shelf','save-note','mission','practice-mode','adventure-mode','certificate-open','certificate-hint','certificate-panel','certificate-name','certificate-close','certificate-preview','certificate-status','certificate-download','certificate-svg'];
+ const ids=['g','t','u','n','repeat','status','sheet','cols','sp','go','chk','pa','pr','th','feedback','effects','adventure','adventure-progress','trail-fill','level-map','badge-shelf','save-note','mission','practice-mode','adventure-mode','certificate-open','certificate-hint','certificate-panel','certificate-name','certificate-close','certificate-preview','certificate-status','certificate-download','certificate-svg','export-panel','export-pdf','export-print','export-close','export-status','export-link'];
  const els=Object.fromEntries(ids.map(id=>[id,element()]));
- els['certificate-panel'].hidden=true;els.g.value='1';els.t.value='1';els.n.value='10';els.repeat.value='no';els.cols.value='2';els.sp.value='s1';
+ els['export-panel'].hidden=true;els['certificate-panel'].hidden=true;els.g.value='1';els.t.value='1';els.n.value='10';els.repeat.value='no';els.cols.value='2';els.sp.value='s1';
  const header=element();let rows=[];
- const context=vm.createContext({document:{body:element(),getElementById:id=>els[id],createElement:element,querySelector:()=>header,querySelectorAll:s=>s==='#u input:checked'?[{value:'0'}]:rows},localStorage:{getItem(key){if(unavailable)throw Error('disabled');return storage[key]||null},setItem(key,value){if(unavailable)throw Error('disabled');storage[key]=value}},matchMedia:()=>({matches:true}),clearTimeout(){},setTimeout(){return 1},alert(){throw Error('unexpected alert')}});
- for(const file of ['generators','practice','feedback','adventure','certificate','app'])vm.runInContext(fs.readFileSync(`${__dirname}/../js/${file}.js`,'utf8'),context);
+ const context=vm.createContext({window:{print(){}},document:{body:element(),getElementById:id=>els[id],createElement:element,querySelector:()=>header,querySelectorAll:s=>s==='#u input:checked'?[{value:'0'}]:rows},localStorage:{getItem(key){if(unavailable)throw Error('disabled');return storage[key]||null},setItem(key,value){if(unavailable)throw Error('disabled');storage[key]=value}},matchMedia:()=>({matches:true}),clearTimeout(){},setTimeout(){return 1},alert(){throw Error('unexpected alert')}});
+ for(const file of ['generators','practice','feedback','adventure','certificate','worksheet','app'])vm.runInContext(fs.readFileSync(`${__dirname}/../js/${file}.js`,'utf8'),context);
  return {els,context,answer(allCorrect=true){const answers=vm.runInContext('QS.map(q=>q[1])',context);rows=answers.map(answer=>{const input={value:allCorrect?answer:'wrong'},mark=element();return {querySelector:s=>s==='input'?input:mark}});els.chk.onclick()}};
 }
 const storage={},p=page(storage);
@@ -50,6 +50,7 @@ assert.deepEqual(JSON.parse(storage['pep-calc-adventure-v1'])['1-1'],[3,3,3,3,3,
 p.els.g.value='2';p.els.g.onchange();assert.equal(p.els['certificate-panel'].hidden,true);assert.equal(p.els['certificate-open'].disabled,true);assert.match(p.els['adventure-progress'].textContent,/已通关 0/);assert.equal(vm.runInContext('QS.length',p.context),0);
 p.els.g.value='1';p.els.g.onchange();assert.match(p.els['adventure-progress'].textContent,/已通关 6/);
 p.els['practice-mode'].onclick();assert.equal(p.els.adventure.hidden,true);p.els.go.onclick();assert.equal(vm.runInContext('QS.length',p.context),10);
+p.els.pr.onclick();assert.equal(p.els['export-panel'].hidden,false,'打印接口静默无响应时仍应显示导出入口');
 const restored=page(storage);assert.match(restored.els['adventure-progress'].textContent,/已通关 6/);
 const fallback=page({},true);fallback.els['adventure-mode'].onclick();vm.runInContext('startLevel(0)',fallback.context);fallback.answer();assert.match(fallback.els['save-note'].textContent,/无法保存/);assert.match(fallback.els['adventure-progress'].textContent,/已通关 1/);
 console.log('闯关测试通过：12条路线、72个关卡配置，解锁、重试、三星、全通关、年级隔离、存档恢复和存储不可用。');

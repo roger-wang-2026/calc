@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "人教版小学1-6年级计算练习生成器",
   "scripts": {
-    "test": "node test/test.js && node test/adventure.test.js && node test/certificate.test.js",
+    "test": "node test/test.js && node test/adventure.test.js && node test/certificate.test.js && node test/worksheet.test.js",
     "start": "npx serve .",
     "build": "node scripts/build.js"
   }
