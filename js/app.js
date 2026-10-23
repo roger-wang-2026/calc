@@ -46,17 +46,11 @@ function renderSheet() {
  $('sheet').innerHTML=`<div class="hd"><b>人教版${N[g-1]}年级${t==1?'上':'下'}册 计算练习</b><span>姓名：________　日期：________　用时：______　得分：______</span></div>
  <div class="g${c==3?' c3':''}" style="--c:${c}">`+QS.map((q,i)=>`<div class="p${q[2]==='='?'':' equation'}"><span class="n">${i+1}.</span><span>${q[0]}${q[2]==='='?'':'，'}</span><span class="answer-field"><span>${q[2]}</span><input aria-label="第${i+1}题答案" ${/^\d+(\.\d+)?$/.test(q[1])?'inputmode="decimal"':''} autocomplete="off"></span><span class="m"></span></div>`).join('')+`</div>
  <div class="ans"><b>参考答案</b><div class="g c3" style="--c:3">`+QS.map((q,i)=>`<span>${i+1}. ${q[1]}</span>`).join('')+`</div></div>`;
- if(mode==='adventure') {
-  const check=document.createElement('button');
-  check.className='pri adventure-submit';
-  check.textContent='✨ 完成啦，检查并领取勋章';
-  check.onclick=()=>$('chk').onclick();
-  $('sheet').appendChild(check);
- }
  $('sheet').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
 }
 $('chk').onclick=()=>{
  if(!QS.length)return;
+ if(mode==='adventure'&&activeLevel){submitChallenge();return}
  let correct=0,answered=0;
  document.querySelectorAll('#sheet .p').forEach((p,i)=>{
   const value=p.querySelector('input').value,filled=value.trim()!=='';
@@ -109,6 +103,7 @@ $('export-pdf').onclick=async()=>{
 };
 $('th').onclick=()=>{const r=document.documentElement,d=r.dataset.theme?r.dataset.theme=='dark':matchMedia('(prefers-color-scheme:dark)').matches;r.dataset.theme=d?'light':'dark'};
 
+let challengeState=null,challengeTimer;
 let currentCertificate=null;
 const SAVE_KEY='pep-calc-adventure-v1';
 let mode='practice',activeLevel=null,progress={},storageAvailable=true;
@@ -120,8 +115,8 @@ function renderMap() {
  $('adventure-progress').textContent=`${N[+$('g').value-1]}年级${$('t').value==='1'?'上':'下'}册 · 已通关 ${completed} / 6 · 星星 ${stars.reduce((a,b)=>a+b,0)} / 18`;
  $('trail-fill').style.width=`${completed/6*100}%`;
  $('level-map').innerHTML=ADVENTURE_LEVELS.map((level,i)=>{
-  const locked=i>0&&!stars[i-1],needed=Math.ceil(level.count*level.target);
-  return `<button class="level-card ${stars[i]?'completed':locked?'locked':'unlocked'}" data-level="${i}" ${locked?'disabled':''}><span class="level-icon" aria-hidden="true">${locked?'🔒':level.icon}</span><span class="level-number">第 ${i+1} 关</span><strong>${level.name}</strong><span>${level.count} 题 · 答对 ${needed} 题通关</span><span class="level-stars" aria-label="${stars[i]}颗星">${'★'.repeat(stars[i])}${'☆'.repeat(3-stars[i])}</span><span>${stars[i]?'再挑战，收集三星':locked?'完成上一关解锁':'出发探险 →'}</span></button>`;
+  const locked=i>0&&!stars[i-1];
+  return `<button class="level-card ${stars[i]?'completed':locked?'locked':'unlocked'}" data-level="${i}" ${locked?'disabled':''}><span class="level-icon" aria-hidden="true">${locked?'🔒':level.icon}</span><span class="level-number">第 ${i+1} 关</span><strong>${level.name}</strong><span>${level.count} 题 · 逐题答对通关</span><span class="level-stars" aria-label="${stars[i]}颗星">${'★'.repeat(stars[i])}${'☆'.repeat(3-stars[i])}</span><span>${stars[i]?'再挑战，收集三星':locked?'完成上一关解锁':'出发探险 →'}</span></button>`;
  }).join('');
  $('badge-shelf').innerHTML=ADVENTURE_LEVELS.map((level,i)=>`<div class="badge ${stars[i]?'earned':''}"><span aria-hidden="true">${stars[i]?level.icon:'🔒'}</span><strong>${level.badge}</strong><small>${stars[i]?'已获得':'通关第'+(i+1)+'关获得'}</small></div>`).join('');
  updateCertificateAvailability();
@@ -129,6 +124,7 @@ function renderMap() {
 }
 function clearSheet() {
  closeCertificate();clearExport();
+ stopChallenge();
  activeLevel=null;QS=[];clearFeedback();$('sheet').replaceChildren();$('status').textContent='';$('mission').hidden=true;
 }
 function setMode(next) {
@@ -146,16 +142,20 @@ function setMode(next) {
 function startLevel(index) {
  const stars=routeStars();
  if(!Number.isInteger(index)||!ADVENTURE_LEVELS[index]||(index>0&&!stars[index-1]))return;
- clearFeedback();clearExport();
+ clearFeedback();clearExport();stopChallenge();
  const level=ADVENTURE_LEVELS[index],pool=adventureUnits(T.filter(u=>u.g===+$('g').value&&u.t===+$('t').value),level);
  QS=buildPractice(pool,level.count,true);
  activeLevel={index,key:routeKey()};
- $('mission').hidden=false;
- $('mission').innerHTML=`<span class="mission-icon" aria-hidden="true">${level.icon}</span><div><h2>第 ${index+1} 关 · ${level.name}</h2><p>${level.story}</p><p>挑战目标：完成 ${level.count} 题，答对至少 ${Math.ceil(level.count*level.target)} 题。允许改正后再次检查。</p><p class="hint">本关本领：${pool.map(u=>u.n).join('、')}</p></div>`;
- $('status').textContent='准备好就开始吧！完成后点击“检查答案”。';
- renderSheet();
+ $('mission').hidden=true;$('sheet').replaceChildren();$('status').textContent='';
+ challengeState={answers:QS.map(()=>null),queue:QS.map((_,i)=>i),cursor:0,busy:false};
+ document.body.classList.add('adventure-playing');
+ $('challenge').hidden=false;
+ renderChallenge();
+ $('challenge').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
+
 }
 function finishLevel(correct,answered) {
+ clearTimeout(challengeTimer);$('challenge').hidden=true;document.body.classList.remove('adventure-playing');
  const level=ADVENTURE_LEVELS[activeLevel.index],result=adventureResult(level,correct,QS.length,answered);
  if(result.passed) {
   const stars=routeStars(),first=!stars[activeLevel.index];
@@ -250,3 +250,58 @@ $('certificate-download').onclick=async()=>{
   $('certificate-status').textContent='PNG 导出未成功，请重试，或选择“下载可缩放版 SVG”。';
  }finally {button.disabled=false}
 };
+
+function stopChallenge() {
+ clearTimeout(challengeTimer);challengeState=null;
+ $('challenge').hidden=true;document.body.classList.remove('adventure-playing');
+}
+function renderChallenge() {
+ const state=challengeState,index=state.queue[state.cursor],q=QS[index],level=ADVENTURE_LEVELS[activeLevel.index];
+ state.busy=false;
+ $('challenge').className='challenge';
+ $('challenge-count').textContent=`第 ${state.cursor+1} / ${state.queue.length} 题`;
+ $('challenge-progress').innerHTML=state.queue.map((i,pos)=>`<span class="${pos===state.cursor?'current':state.answers[i]===true?'done':state.answers[i]===false?'review':''}" aria-label="第${pos+1}题${pos===state.cursor?'，当前题':state.answers[i]===true?'，已答对':''}"></span>`).join('');
+ $('challenge-icon').textContent=level.icon;
+ $('challenge-level').textContent=`第 ${activeLevel.index+1} 关 · ${level.name}`;
+ $('challenge-title').textContent=state.queue.length===QS.length?'点亮这一站的星光':'错题再探险';
+ $('challenge-goal').textContent=`本关 ${QS.length} 题 · 已点亮 ${state.answers.filter(a=>a===true).length} 题 · 答对才能继续`;
+ $('challenge-question').innerHTML=q[0];
+ $('challenge-prefix').textContent=q[2]==='='?'答案':q[2];
+ const input=$('challenge-input');input.value='';input.disabled=false;
+ input.setAttribute('inputmode',/^\d+(\.\d+)?$/.test(q[1])?'decimal':'text');
+ input.setAttribute('aria-invalid','false');
+ $('challenge-format').textContent=q[1].includes('…')?'余数可以这样填：2余1':q[1].includes('/')?'分数可以这样填：1/2':q[1].includes('%')?'记得加上 % 符号':q[1].includes(':')?'比可以这样填：1:2':'';
+ $('challenge-message').textContent='一次只想一题，慢慢来也很棒！';
+ $('challenge-submit').disabled=false;$('challenge-submit').textContent='确认答案 →';
+ $('challenge-next').hidden=true;
+ input.focus({preventScroll:true});
+}
+function submitChallenge() {
+ if(!challengeState||challengeState.busy)return;
+ const state=challengeState,index=state.queue[state.cursor],input=$('challenge-input'),value=input.value.trim();
+ if(!value){$('challenge-message').textContent='先填一个答案吧，小狐狸等着和你一起出发！';input.focus({preventScroll:true});return}
+ const right=answerMatches(value,QS[index][1]);
+ if(right) {
+  state.answers[index]=true;state.busy=true;
+  $('challenge').className='challenge correct';
+  $('challenge-message').textContent=['算对啦！一颗星光为你亮起 ✨','太棒了，继续向前探索吧！🌟','认真思考的你，正在闪闪发光！'][state.cursor%3];
+  input.disabled=true;$('challenge-submit').disabled=true;
+  $('challenge-next').textContent=state.cursor===state.queue.length-1?'查看闯关成果 →':'下一题 →';
+  $('challenge-next').hidden=false;
+  challengeTimer=setTimeout(advanceChallenge,1200);
+ } else {
+  $('challenge').className='challenge try-again';input.setAttribute('aria-invalid','true');
+  $('challenge-message').textContent='还差一点点！检查一下数字和运算符号，订正正确后，我们再一起向前走。';
+  $('challenge-submit').textContent='再试一次 →';input.focus({preventScroll:true});input.select();
+ }
+}
+function advanceChallenge() {
+ if(!challengeState||!challengeState.busy)return;
+ clearTimeout(challengeTimer);
+ const state=challengeState;
+ if(state.cursor+1<state.queue.length){state.cursor++;renderChallenge()}
+ else {state.busy=false;finishLevel(state.answers.filter(a=>a===true).length,state.answers.filter(a=>a!==null).length)}
+}
+$('challenge-form').onsubmit=event=>{event.preventDefault();submitChallenge()};
+$('challenge-next').onclick=advanceChallenge;
+$('challenge-back').onclick=()=>{clearSheet();$('adventure').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'})};

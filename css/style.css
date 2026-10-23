@@ -120,3 +120,28 @@ button:disabled{cursor:not-allowed;opacity:.55}
 @media print{.export-panel{display:none!important}}
 .answer-field{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;flex-shrink:0}
 .equation .answer-field input{width:3.4em}
+.challenge{max-width:680px;margin:22px auto;background:var(--card);border:1px solid var(--bd);border-radius:24px;padding:28px;box-shadow:0 14px 45px #00000006}
+.challenge[hidden]{display:none}
+.adventure-playing .ctl,.adventure-playing #adventure,.adventure-playing #mission,.adventure-playing #sheet,.adventure-playing #status{display:none}
+.challenge-top{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:.9rem;font-weight:700}
+.challenge-top button{background:transparent;border:0;padding-left:0;font-size:.85rem}
+.challenge-progress{display:flex;gap:6px;margin:14px 0 26px}
+.challenge-progress span{height:7px;flex:1;background:var(--grid);border-radius:8px}
+.challenge-progress .done{background:var(--ok)}.challenge-progress .current{background:var(--ac)}
+.challenge-heading{display:flex;align-items:center;justify-content:center;gap:12px}
+#challenge-icon{font-size:2.5rem}.challenge-heading p{margin:0;font-size:.8rem;opacity:.7}.challenge-heading h2{margin:3px 0;font-size:1.3rem}
+#challenge-goal{text-align:center;margin-bottom:24px}
+.fox-coach{display:flex;align-items:center;gap:12px;background:var(--bg);border-radius:15px;padding:12px 16px;min-height:80px}
+.fox-coach>span{font-size:2rem;flex-shrink:0}.fox-coach p{margin:0;font-size:.95rem;line-height:1.7}
+.challenge-question{min-height:135px;display:flex;align-items:center;justify-content:center;flex-wrap:wrap;font-size:clamp(1.5rem,5vw,2.25rem);text-align:center;padding:28px 0;overflow-wrap:anywhere}
+.challenge-answer{display:flex;justify-content:center;gap:14px;font-size:1.2rem}
+#challenge-input{width:170px;max-width:65%;min-height:58px;text-align:center;font-family:inherit;font-size:1.6rem;font-weight:700;line-height:1.3;color:var(--fg);background:var(--bg);border:2px solid var(--bd);border-radius:12px;padding:10px}
+#challenge-input:focus{border-color:var(--ac)}
+#challenge-form{text-align:center}#challenge-format{min-height:1.5em;margin:10px 0}
+#challenge-submit{width:100%;min-height:50px;font-weight:700}
+.challenge-actions{text-align:center;margin-top:12px}.challenge-actions button{width:100%;border-color:var(--ok);color:var(--ok);font-weight:700}.challenge-actions button[hidden]{display:none}
+.challenge-note{text-align:center;opacity:.6;font-size:.78rem;margin:20px 0 0}
+.challenge.correct{border-color:var(--ok)}.challenge.correct .fox-coach{background:#50b59a18}.challenge.correct #challenge-input{border-color:var(--ok)}
+.challenge.try-again #challenge-input{border-color:var(--bad)}
+@media(max-width:560px){.challenge{padding:18px;margin:14px auto;border-radius:18px}.challenge-progress{gap:4px}.challenge-question{min-height:120px}.adventure-playing .site-header{padding:10px 0 4px}.adventure-playing .site-header p{display:none}.adventure-playing .mode-switch{margin:10px auto}}
+@media print{.challenge{display:none!important}}

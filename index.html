@@ -52,6 +52,21 @@
  <p id="export-status" role="status" aria-live="polite"></p><a id="export-link" target="_blank" rel="noopener" hidden>打开 PDF 预览 / 保存</a>
  <p class="hint">如果在微信等内置浏览器中无法下载，请通过右上角菜单选择“在浏览器打开”。</p>
 </section>
+<section id="challenge" class="challenge" aria-label="单题闯关" hidden>
+ <div class="challenge-top"><button id="challenge-back" type="button">← 返回地图</button><span id="challenge-count"></span></div>
+ <div id="challenge-progress" class="challenge-progress" aria-label="本关进度"></div>
+ <div class="challenge-heading"><span id="challenge-icon" aria-hidden="true"></span><div><p id="challenge-level"></p><h2 id="challenge-title"></h2></div></div>
+ <p id="challenge-goal" class="hint"></p>
+ <div class="fox-coach"><span aria-hidden="true">🦊</span><p id="challenge-message" role="status" aria-live="polite">一次只想一题，慢慢来也很棒！</p></div>
+ <form id="challenge-form" novalidate>
+  <div id="challenge-question" class="challenge-question"></div>
+  <label class="challenge-answer"><span id="challenge-prefix">答案</span><input id="challenge-input" aria-label="本题答案" autocomplete="off" enterkeyhint="done" required></label>
+  <p id="challenge-format" class="hint"></p>
+  <button id="challenge-submit" class="pri" type="submit">确认答案 →</button>
+ </form>
+ <div class="challenge-actions"><button id="challenge-next" type="button" hidden>下一题 →</button></div>
+ <p class="challenge-note">不计时 · 答对自动前进 · 答错可以再试</p>
+</section>
 <section id="mission" class="mission" aria-live="polite" hidden></section>
 <p id="status" class="hint" role="status"></p>
 <section id="feedback" class="feedback" role="status" aria-live="polite" aria-atomic="true" hidden></section>
