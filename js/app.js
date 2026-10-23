@@ -99,7 +99,9 @@ $('export-pdf').onclick=async()=>{
   if(worksheetURL)URL.revokeObjectURL(worksheetURL);
   worksheetURL=URL.createObjectURL(blob);
   const link=$('export-link');link.href=worksheetURL;link.hidden=false;
-  const download=document.createElement('a');download.href=worksheetURL;download.download='星光算术岛-计算练习.pdf';
+  const download=document.createElement('a');download.href=worksheetURL;const now=new Date(),pad=value=>String(value).padStart(2,'0');
+  const stamp=`${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+  download.download=`星光算术岛-计算练习-${stamp}.pdf`;
   document.body.appendChild(download);download.click();download.remove();
   $('export-status').textContent='PDF 已生成。如果没有自动下载，请点击下方链接打开预览，再通过分享菜单保存或打印。';
  } catch {$('export-status').textContent='PDF 生成失败，请重试；也可以在 Safari 或 Chrome 中打开本页后再下载。'}
