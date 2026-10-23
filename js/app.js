@@ -44,7 +44,7 @@ function renderSheet() {
  const g=+$('g').value,t=+$('t').value,c=mode==='adventure'?'2':$('cols').value;
  $('sheet').className=mode==='adventure'?'s1':$('sp').value;
  $('sheet').innerHTML=`<div class="hd"><b>人教版${N[g-1]}年级${t==1?'上':'下'}册 计算练习</b><span>姓名：________　日期：________　用时：______　得分：______</span></div>
- <div class="g${c==3?' c3':''}" style="--c:${c}">`+QS.map((q,i)=>`<div class="p"><span class="n">${i+1}.</span><span>${q[2]=='='?q[0]:'求 x：'+q[0]+'，'}</span><span>${q[2]}</span><input aria-label="第${i+1}题答案" ${/^\d+(\.\d+)?$/.test(q[1])?'inputmode="decimal"':''} autocomplete="off"><span class="m"></span></div>`).join('')+`</div>
+ <div class="g${c==3?' c3':''}" style="--c:${c}">`+QS.map((q,i)=>`<div class="p${q[2]==='='?'':' equation'}"><span class="n">${i+1}.</span><span>${q[0]}${q[2]==='='?'':'，'}</span><span class="answer-field"><span>${q[2]}</span><input aria-label="第${i+1}题答案" ${/^\d+(\.\d+)?$/.test(q[1])?'inputmode="decimal"':''} autocomplete="off"></span><span class="m"></span></div>`).join('')+`</div>
  <div class="ans"><b>参考答案</b><div class="g c3" style="--c:3">`+QS.map((q,i)=>`<span>${i+1}. ${q[1]}</span>`).join('')+`</div></div>`;
  if(mode==='adventure') {
   const check=document.createElement('button');
@@ -63,7 +63,7 @@ $('chk').onclick=()=>{
   const right=filled&&answerMatches(value,QS[i][1]);
   if(filled)answered++;
   if(right)correct++;
-  p.className='p '+(right?'ok':filled?'bad':'');
+  p.className='p '+(QS[i][2]==='='?'':'equation ')+(right?'ok':filled?'bad':'');
   p.querySelector('.m').textContent=right?'✓':filled?'✗ 再算一次':'待作答';
  });
  document.querySelector('.hd span').innerHTML=`得分：<b>${correct}</b> / ${QS.length}`;
