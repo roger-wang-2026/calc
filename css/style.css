@@ -5,7 +5,9 @@ html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 "PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC",sans-serif}
 .wrap{max-width:980px;margin:0 auto;padding:14px}
-h1{font-size:1.35rem;margin:6px 0 12px}
+.site-header{text-align:center;padding:16px 0 10px}
+h1{font-size:clamp(1.7rem,4vw,2.2rem);letter-spacing:.12em;margin:0;color:var(--fg)}
+.site-header p{margin:8px 0 0;font-size:.88rem;color:var(--fg);opacity:.65}
 .ctl{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;display:grid;gap:12px}
 .row{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center}
 label{display:flex;align-items:center;gap:6px}
@@ -36,7 +38,7 @@ body.pa .ans{display:block}
 :root:root:root{--bg:#fff;--fg:#000;--card:#fff;--bd:#888;--ac:#000;--grid:#fff}
 @page{size:A4;margin:12mm}
 body{background:#fff;font-size:12pt}.wrap{padding:0;max-width:none}
-.ctl,h1,.hint{display:none!important}
+.ctl,.site-header,h1,.hint{display:none!important}
 #sheet{border:0;padding:0;margin:0;background:none}
 .g{--c:2!important;gap:2mm 8mm}.g.c3{--c:3!important}
 .p{break-inside:avoid;border:0;font-size:14pt}.s1 .p{min-height:20mm}.s2 .p{min-height:38mm}
@@ -63,7 +65,8 @@ body{background:#fff;font-size:12pt}.wrap{padding:0;max-width:none}
 @media print{.feedback,.effects{display:none!important}}
 
 .mode-switch{display:flex;gap:10px;margin:12px 0}
-.mode-switch button{flex:1;font-weight:700}
+.mode-switch button{flex:1;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px}
+.mode-icon{width:24px;height:24px;flex-shrink:0}
 .adventure-mode .practice-option,.adventure-mode #unit-settings,.adventure-mode #go{display:none}
 .adventure{margin-top:18px;padding:26px;border:1px solid var(--bd);border-radius:22px;background:radial-gradient(ellipse at top right,#f8bc4822,transparent 60%),var(--card)}
 .adventure[hidden],.mission[hidden]{display:none}
