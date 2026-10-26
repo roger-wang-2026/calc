@@ -13,7 +13,7 @@ for(let g=1;g<=6;g++)for(let t=1;t<=2;t++) {
   const questions=buildPractice(pool,level.count,true);
   assert.equal(questions.length,level.count);
   const needed=Math.ceil(level.count*level.target);
-  assert.equal(adventureResult(level,needed,level.count,level.count).passed,true);
+  assert.equal(adventureResult(level,needed,level.count,level.count).passed,needed===level.count);
   assert.equal(adventureResult(level,needed-1,level.count,level.count).passed,false);
   assert.equal(adventureResult(level,needed,level.count,level.count-1).passed,false);
   assert.equal(adventureResult(level,level.count,level.count,level.count).stars,3);
@@ -25,12 +25,12 @@ assert.deepEqual(readAdventureProgress('{"1-1":["3",4,-1]}')['1-1'],[0,0,0,0,0,0
 // 用独立页面上下文验证真正的按钮处理器、存档恢复与奖励流程。
 function page(storage,unavailable=false) {
  const element=()=>({value:'',innerHTML:'',textContent:'',hidden:false,children:[],style:{},classList:{toggle(){},remove(){},add(){}},replaceChildren(){this.children=[];this.innerHTML=''},appendChild(child){this.children.push(child)},scrollIntoView(){},focus(){},select(){},setAttribute(key,value){this[key]=value}});
- const ids=['g','t','u','n','repeat','status','sheet','cols','sp','go','chk','pa','pr','th','feedback','effects','adventure','adventure-progress','trail-fill','level-map','badge-shelf','save-note','mission','practice-mode','adventure-mode','certificate-open','certificate-hint','certificate-panel','certificate-name','certificate-close','certificate-preview','certificate-status','certificate-download','certificate-svg','export-panel','export-pdf','export-print','export-close','export-status','export-link','challenge','challenge-back','challenge-count','challenge-progress','challenge-icon','challenge-level','challenge-title','challenge-goal','challenge-message','challenge-form','challenge-question','challenge-prefix','challenge-input','challenge-format','challenge-submit','challenge-next'];
+ const ids=['g','t','u','n','repeat','status','sheet','cols','sp','go','chk','pa','pr','th','feedback','effects','adventure','adventure-progress','trail-fill','level-map','badge-shelf','save-note','mission','practice-mode','adventure-mode','certificate-open','certificate-hint','certificate-panel','certificate-name','certificate-close','certificate-preview','certificate-status','certificate-download','certificate-svg','export-panel','export-pdf','export-print','export-close','export-status','export-link','challenge','challenge-back','challenge-count','challenge-progress','challenge-icon','challenge-level','challenge-title','challenge-goal','challenge-message','challenge-form','challenge-question','challenge-prefix','challenge-input','challenge-format','challenge-submit','challenge-next','review-summary','review-start','review-list','review-storage'];
  const els=Object.fromEntries(ids.map(id=>[id,element()]));
  els['export-panel'].hidden=true;els['certificate-panel'].hidden=true;els.g.value='1';els.t.value='1';els.n.value='10';els.repeat.value='no';els.cols.value='2';els.sp.value='s1';
  const header=element();let rows=[],timerId=0;const timers=new Map();
  const context=vm.createContext({window:{print(){}},document:{body:element(),getElementById:id=>els[id],createElement:element,querySelector:()=>header,querySelectorAll:s=>s==='#u input:checked'?[{value:'0'}]:rows},localStorage:{getItem(key){if(unavailable)throw Error('disabled');return storage[key]||null},setItem(key,value){if(unavailable)throw Error('disabled');storage[key]=value}},matchMedia:()=>({matches:true}),clearTimeout(id){timers.delete(id)},setTimeout(callback,delay){timers.set(++timerId,{callback,delay});return timerId},alert(){throw Error('unexpected alert')}});
- for(const file of ['generators','practice','feedback','adventure','certificate','worksheet','app'])vm.runInContext(fs.readFileSync(`${__dirname}/../js/${file}.js`,'utf8'),context);
+ for(const file of ['generators','practice','feedback','adventure','certificate','worksheet','mistakes','app'])vm.runInContext(fs.readFileSync(`${__dirname}/../js/${file}.js`,'utf8'),context);
  return {els,context,tick(){const entry=[...timers].find(([,timer])=>timer.delay===1200);if(entry){timers.delete(entry[0]);entry[1].callback()}},answer(allCorrect=true){
   if(vm.runInContext("mode==='adventure'&&!!activeLevel",context)) {
    if(!allCorrect){els['challenge-input'].value='wrong';els['challenge-form'].onsubmit({preventDefault(){}});return}
@@ -49,14 +49,24 @@ assert.equal(p.els['certificate-open'].disabled,true);
 p.els['adventure-mode'].onclick();
 assert.equal(p.els.adventure.hidden,false);
 vm.runInContext('startLevel(1)',p.context);assert.equal(vm.runInContext('QS.length',p.context),0);
-vm.runInContext('startLevel(0)',p.context);p.answer(false);assert.match(p.els['challenge-message'].textContent,/订正正确/);assert.equal(vm.runInContext('challengeState.cursor',p.context),0);assert.equal(p.els['challenge-next'].hidden,true);p.els['challenge-next'].onclick();assert.equal(vm.runInContext('challengeState.cursor',p.context),0);assert.equal(Object.keys(storage).length,0);
-p.answer();assert.match(p.els.feedback.innerHTML,/勇气萌芽/);assert.equal(JSON.parse(storage['pep-calc-adventure-v1'])['1-1'][0],3);
+vm.runInContext('startLevel(0)',p.context);p.answer(false);assert.match(p.els['challenge-message'].textContent,/订正正确/);assert.equal(vm.runInContext('challengeState.cursor',p.context),0);assert.equal(p.els['challenge-next'].hidden,true);p.els['challenge-next'].onclick();assert.equal(vm.runInContext('challengeState.cursor',p.context),0);assert.equal(storage['pep-calc-adventure-v1'],undefined);assert.equal(JSON.parse(storage['pep-calc-mistakes-v1']).length,1);
+p.answer();assert.match(p.els.feedback.innerHTML,/勇气萌芽/);assert.equal(JSON.parse(storage['pep-calc-adventure-v1'])['1-1'][0],2);
 p.els['certificate-open'].onclick();assert.equal(p.els['certificate-panel'].hidden,false);assert.match(p.els['certificate-preview'].alt,/获得1枚勋章/);
 p.els['certificate-name'].value='<小明&>';p.els['certificate-name'].oninput();assert.match(decodeURIComponent(p.els['certificate-preview'].src),/&lt;小明&amp;&gt;/);
 p.els.feedback.children[0].onclick();assert.match(p.els['challenge-level'].textContent,/蘑菇森林/);
 for(let i=1;i<6;i++){vm.runInContext(`startLevel(${i})`,p.context);p.answer()}
 assert.match(p.els.feedback.innerHTML,/六枚勋章集齐/);
+p.els['certificate-open'].onclick();assert.match(p.els['certificate-preview'].alt,/星辰小勇者/);
+// 复练两轮可掌握，不直接修改关卡星数。
+p.els['review-start'].onclick();p.answer();assert.match(p.els.feedback.innerHTML,/巩固/);
+p.els['review-start'].onclick();p.answer();assert.match(p.els.feedback.innerHTML,/已掌握/);
+assert.equal(JSON.parse(storage['pep-calc-adventure-v1'])['1-1'][0],2);
+assert.equal(JSON.parse(storage['pep-calc-mistakes-v1'])[0].streak,2);
+vm.runInContext('startLevel(0)',p.context);p.answer();
 p.els['certificate-open'].onclick();assert.match(p.els['certificate-preview'].alt,/满星传奇探险家/);
+// 较低的新成绩不能减少历史最高三星。
+vm.runInContext('startLevel(0)',p.context);p.answer(false);p.answer();
+assert.equal(JSON.parse(storage['pep-calc-adventure-v1'])['1-1'][0],3);
 assert.deepEqual(JSON.parse(storage['pep-calc-adventure-v1'])['1-1'],[3,3,3,3,3,3]);
 p.els.g.value='2';p.els.g.onchange();assert.equal(p.els['certificate-panel'].hidden,true);assert.equal(p.els['certificate-open'].disabled,true);assert.match(p.els['adventure-progress'].textContent,/已通关 0/);assert.equal(vm.runInContext('QS.length',p.context),0);
 p.els.g.value='1';p.els.g.onchange();assert.match(p.els['adventure-progress'].textContent,/已通关 6/);

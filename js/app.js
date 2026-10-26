@@ -14,7 +14,7 @@ function showFeedback(correct, answered, override) {
  clearFeedback();
  const feedback=override||getFeedback(correct,QS.length,answered), card=$('feedback');
  card.className='feedback '+feedback.kind;
- card.innerHTML=`<span class="feedback-emoji" aria-hidden="true">${feedback.emoji}</span><div><h2>${feedback.title}</h2><p class="feedback-score">答对 ${correct} / ${QS.length} 题 · 正确率 ${Math.round(correct/QS.length*100)}%</p><p>${feedback.message}</p></div>`;
+ card.innerHTML=`<span class="feedback-emoji" aria-hidden="true">${feedback.emoji}</span><div><h2>${feedback.title}</h2><p class="feedback-score">${feedback.score||`答对 ${correct} / ${QS.length} 题 · 正确率 ${Math.round(correct/QS.length*100)}%`}</p><p>${feedback.message}</p></div>`;
  card.hidden=false;
  const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
  if (!reduced && ['confetti','applause'].includes(feedback.kind)) {
@@ -108,6 +108,9 @@ let currentCertificate=null;
 const SAVE_KEY='pep-calc-adventure-v1';
 let mode='practice',activeLevel=null,progress={},storageAvailable=true;
 try {progress=readAdventureProgress(localStorage.getItem(SAVE_KEY))}catch {storageAvailable=false}
+const MISTAKES_KEY='pep-calc-mistakes-v1';
+let mistakes=[],mistakesStorage=true;
+try {mistakes=readMistakes(localStorage.getItem(MISTAKES_KEY),T)}catch{mistakesStorage=false}
 const routeKey=()=>`${$('g').value}-${$('t').value}`;
 function routeStars(){return progress[routeKey()]||ADVENTURE_LEVELS.map(()=>0)}
 function renderMap() {
@@ -119,6 +122,7 @@ function renderMap() {
   return `<button class="level-card ${stars[i]?'completed':locked?'locked':'unlocked'}" data-level="${i}" ${locked?'disabled':''}><span class="level-icon" aria-hidden="true">${locked?'🔒':level.icon}</span><span class="level-number">第 ${i+1} 关</span><strong>${level.name}</strong><span>${level.count} 题 · 逐题答对通关</span><span class="level-stars" aria-label="${stars[i]}颗星">${'★'.repeat(stars[i])}${'☆'.repeat(3-stars[i])}</span><span>${stars[i]?'再挑战，收集三星':locked?'完成上一关解锁':'出发探险 →'}</span></button>`;
  }).join('');
  $('badge-shelf').innerHTML=ADVENTURE_LEVELS.map((level,i)=>`<div class="badge ${stars[i]?'earned':''}"><span aria-hidden="true">${stars[i]?level.icon:'🔒'}</span><strong>${level.badge}</strong><small>${stars[i]?'已获得':'通关第'+(i+1)+'关获得'}</small></div>`).join('');
+ renderReviewHub();
  updateCertificateAvailability();
  $('save-note').textContent=storageAvailable?'进度保存在当前浏览器，各年级、学期分别记录。清除浏览器数据会丢失收藏。':'当前浏览器无法保存进度，本次打开期间仍可继续闯关。';
 }
@@ -144,10 +148,10 @@ function startLevel(index) {
  if(!Number.isInteger(index)||!ADVENTURE_LEVELS[index]||(index>0&&!stars[index-1]))return;
  clearFeedback();clearExport();stopChallenge();
  const level=ADVENTURE_LEVELS[index],pool=adventureUnits(T.filter(u=>u.g===+$('g').value&&u.t===+$('t').value),level);
- QS=buildPractice(pool,level.count,true);
+ QS=buildPractice(pool,level.count,true,true);
  activeLevel={index,key:routeKey()};
  $('mission').hidden=true;$('sheet').replaceChildren();$('status').textContent='';
- challengeState={answers:QS.map(()=>null),queue:QS.map((_,i)=>i),cursor:0,busy:false};
+ challengeState={firstCorrect:QS.map(()=>null),answers:QS.map(()=>null),queue:QS.map((_,i)=>i),cursor:0,busy:false};
  document.body.classList.add('adventure-playing');
  $('challenge').hidden=false;
  renderChallenge();
@@ -155,21 +159,25 @@ function startLevel(index) {
 
 }
 function finishLevel(correct,answered) {
+ if(activeLevel.review){finishReview();return}
+ const firstCorrect=challengeState.firstCorrect.filter(answer=>answer===true).length;
  clearTimeout(challengeTimer);$('challenge').hidden=true;document.body.classList.remove('adventure-playing');
- const level=ADVENTURE_LEVELS[activeLevel.index],result=adventureResult(level,correct,QS.length,answered);
+ const level=ADVENTURE_LEVELS[activeLevel.index],result=adventureResult(level,correct,QS.length,answered,firstCorrect);
  if(result.passed) {
   const stars=routeStars(),first=!stars[activeLevel.index];
   stars[activeLevel.index]=Math.max(stars[activeLevel.index],result.stars);
   progress[activeLevel.key]=stars;
   try {localStorage.setItem(SAVE_KEY,JSON.stringify(progress));storageAvailable=true}catch {storageAvailable=false}
   renderMap();
-  showFeedback(correct,answered,{kind:'confetti',emoji:level.icon,title:first?`闯关成功！获得「${level.badge}」勋章！`:'再次通关，真棒！',message:`本次点亮 ${result.stars} 颗星！${activeLevel.index===5?'六枚勋章集齐啦！你就是星辰小勇者，也可以重玩关卡收集更多星星。':'下一站的冒险已经解锁，小狐狸等你一起出发！'}`});
+  showFeedback(correct,answered,{kind:'confetti',emoji:level.icon,score:`首次答对 ${firstCorrect} / ${QS.length} 题 · 订正后全部答对`,title:first?`闯关成功！获得「${level.badge}」勋章！`:'再次通关，真棒！',message:`首次正确率 ${Math.round(firstCorrect/QS.length*100)}%，本次点亮 ${result.stars} 颗星！认真订正也值得鼓励。${activeLevel.index===5?'六枚勋章集齐啦！你就是星辰小勇者，也可以重玩关卡收集更多星星。':'下一站的冒险已经解锁，小狐狸等你一起出发！'}`});
   const action=document.createElement('button');
   action.className='pri adventure-next';
   action.textContent=activeLevel.index===5?'🗺️ 回到地图，查看收藏':'下一关 →';
   const nextIndex=activeLevel.index+1;
   action.onclick=()=>{if(nextIndex<ADVENTURE_LEVELS.length)startLevel(nextIndex);else {$('adventure').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});}};
   $('feedback').appendChild(action);
+  if(result.stars<3)addFeedbackButton('再挑战本关，争取三星',()=>startLevel(activeLevel.index));
+  if(mistakes.some(e=>e.route===routeKey()&&e.streak<2))addFeedbackButton('🦊 去复练错题',startReview);
  } else {
   const remaining=QS.length-answered,needed=Math.ceil(QS.length*level.target)-correct;
   showFeedback(correct,answered,{kind:'cheer',emoji:'🦊',title:remaining?'冒险还在继续，先完成剩下的题吧！':'再试一步，就离勋章更近啦！',message:remaining?`还有 ${remaining} 题没作答。不用着急，小狐狸陪你一起想。`:`再答对 ${Math.max(0,needed)} 题就能通关！可以改正后再次检查，已经获得的勋章和星星不会减少。`});
@@ -256,22 +264,22 @@ function stopChallenge() {
  $('challenge').hidden=true;document.body.classList.remove('adventure-playing');
 }
 function renderChallenge() {
- const state=challengeState,index=state.queue[state.cursor],q=QS[index],level=ADVENTURE_LEVELS[activeLevel.index];
+ const state=challengeState,index=state.queue[state.cursor],q=QS[index],level=activeLevel.review?{icon:'🦊',name:'错题再探险'}:ADVENTURE_LEVELS[activeLevel.index];
  state.busy=false;
  $('challenge').className='challenge';
  $('challenge-count').textContent=`第 ${state.cursor+1} / ${state.queue.length} 题`;
  $('challenge-progress').innerHTML=state.queue.map((i,pos)=>`<span class="${pos===state.cursor?'current':state.answers[i]===true?'done':state.answers[i]===false?'review':''}" aria-label="第${pos+1}题${pos===state.cursor?'，当前题':state.answers[i]===true?'，已答对':''}"></span>`).join('');
  $('challenge-icon').textContent=level.icon;
- $('challenge-level').textContent=`第 ${activeLevel.index+1} 关 · ${level.name}`;
- $('challenge-title').textContent=state.queue.length===QS.length?'点亮这一站的星光':'错题再探险';
- $('challenge-goal').textContent=`本关 ${QS.length} 题 · 已点亮 ${state.answers.filter(a=>a===true).length} 题 · 答对才能继续`;
+ $('challenge-level').textContent=activeLevel.review?`${N[+$('g').value-1]}年级 · ${level.name}`:`第 ${activeLevel.index+1} 关 · ${level.name}`;
+ $('challenge-title').textContent=activeLevel.review?'把不熟悉，变成小本领':'点亮这一站的星光';
+ $('challenge-goal').textContent=`${activeLevel.review?'本次复练':'本关'} ${QS.length} 题 · 已点亮 ${state.answers.filter(a=>a===true).length} 题 · 答对才能继续`;
  $('challenge-question').innerHTML=q[0];
  $('challenge-prefix').textContent=q[2]==='='?'答案':q[2];
  const input=$('challenge-input');input.value='';input.disabled=false;
  input.setAttribute('inputmode',/^\d+(\.\d+)?$/.test(q[1])?'decimal':'text');
  input.setAttribute('aria-invalid','false');
  $('challenge-format').textContent=q[1].includes('…')?'余数可以这样填：2余1':q[1].includes('/')?'分数可以这样填：1/2':q[1].includes('%')?'记得加上 % 符号':q[1].includes(':')?'比可以这样填：1:2':'';
- $('challenge-message').textContent='一次只想一题，慢慢来也很棒！';
+ $('challenge-message').textContent=activeLevel.review?(activeLevel.groups.some(group=>group.indexes[0]===index)?'先试试这道原题，看看你还记得吗？':'换一组数字，再用刚才的本领试试！'):'一次只想一题，慢慢来也很棒！';
  $('challenge-submit').disabled=false;$('challenge-submit').textContent='确认答案 →';
  $('challenge-next').hidden=true;
  input.focus({preventScroll:true});
@@ -281,6 +289,16 @@ function submitChallenge() {
  const state=challengeState,index=state.queue[state.cursor],input=$('challenge-input'),value=input.value.trim();
  if(!value){$('challenge-message').textContent='先填一个答案吧，小狐狸等着和你一起出发！';input.focus({preventScroll:true});return}
  const right=answerMatches(value,QS[index][1]);
+ if(state.firstCorrect[index]===null) {
+  state.firstCorrect[index]=right;
+  if(!right) {
+   if(activeLevel.review){
+    const group=activeLevel.groups.find(group=>group.indexes.includes(index));
+    mistakes=mistakes.map(entry=>entry.id===group.id?{...entry,streak:0}:entry);
+   }else mistakes=recordMistake(mistakes,QS[index],activeLevel.key,activeLevel.index,QS[index][3]);
+   saveMistakes();
+  }
+ }
  if(right) {
   state.answers[index]=true;state.busy=true;
   $('challenge').className='challenge correct';
@@ -305,3 +323,43 @@ function advanceChallenge() {
 $('challenge-form').onsubmit=event=>{event.preventDefault();submitChallenge()};
 $('challenge-next').onclick=advanceChallenge;
 $('challenge-back').onclick=()=>{clearSheet();$('adventure').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'})};
+
+function saveMistakes() {
+ try {localStorage.setItem(MISTAKES_KEY,JSON.stringify(mistakes));mistakesStorage=true}catch{mistakesStorage=false}
+ renderReviewHub();
+}
+function renderReviewHub() {
+ const entries=mistakes.filter(entry=>entry.route===routeKey()),pending=entries.filter(entry=>entry.streak<2);
+ $('review-summary').textContent=entries.length?`待复练 ${pending.length} 道 · 已掌握 ${entries.length-pending.length} 道`:'暂时没有错题。勇敢出发，遇到不会的题，小狐狸会帮你记下来！';
+ $('review-start').disabled=!pending.length;
+ $('review-list').replaceChildren();
+ for(const entry of entries) {
+  const item=document.createElement('li');
+  item.textContent=`${entry.unit} · ${worksheetText(entry.question[0])} · ${entry.streak===2?'✓ 已掌握':`独立答对 ${entry.streak} / 2 轮`}`;
+  $('review-list').appendChild(item);
+ }
+ $('review-storage').textContent=mistakesStorage?'错题按年级、学期保存在当前浏览器，清除浏览器数据会丢失记录。':'当前无法保存错题，记录仅在本次打开期间有效。';
+}
+function startReview() {
+ const review=buildReview(mistakes,T,routeKey());
+ if(!review.questions.length)return;
+ clearFeedback();clearExport();stopChallenge();
+ QS=review.questions;activeLevel={review:true,key:routeKey(),groups:review.groups};
+ challengeState={firstCorrect:QS.map(()=>null),answers:QS.map(()=>null),queue:QS.map((_,i)=>i),cursor:0,busy:false};
+ $('sheet').replaceChildren();$('mission').hidden=true;$('status').textContent='';
+ document.body.classList.add('adventure-playing');$('challenge').hidden=false;renderChallenge();
+ $('challenge').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'});
+}
+function addFeedbackButton(label,action) {
+ const button=document.createElement('button');button.textContent=label;button.onclick=action;$('feedback').appendChild(button);
+}
+function finishReview() {
+ clearTimeout(challengeTimer);$('challenge').hidden=true;document.body.classList.remove('adventure-playing');
+ mistakes=completeReview(mistakes,activeLevel.groups,challengeState.firstCorrect);saveMistakes();
+ const mastered=activeLevel.groups.filter(group=>mistakes.find(entry=>entry.id===group.id).streak===2).length;
+ const first=challengeState.firstCorrect.filter(Boolean).length;
+ showFeedback(QS.length,QS.length,{kind:'applause',emoji:'🦊',score:`首次答对 ${first} / ${QS.length} 题 · 订正后全部答对`,title:mastered?`点亮 ${mastered} 道“已掌握”！`:'又巩固了一遍，认真练习的你真棒！',message:'连续两轮独立答对原题和同类变式，就能标记“已掌握”。复练不改变关卡星数；想争取三星，可以回地图重新挑战。'});
+ addFeedbackButton('回到地图，挑战三星',()=>{clearSheet();renderMap();$('adventure').scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'start'})});
+ if(mistakes.some(e=>e.route===routeKey()&&e.streak<2))addFeedbackButton('再练一轮',startReview);
+}
+$('review-start').onclick=startReview;

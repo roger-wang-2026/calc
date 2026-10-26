@@ -1,5 +1,5 @@
 // 组卷和判题独立于页面，浏览器与 Node 共用。
-function buildPractice(units, count, allowRepeat = false) {
+function buildPractice(units, count, allowRepeat = false, includeSource = false) {
   if (!Number.isInteger(count) || count < 1) throw new Error('题量必须为正整数');
   const questions = [], seen = new Set();
   // 每个单元有独立的尝试预算；题目较少的单元不会阻塞其他单元。
@@ -14,7 +14,9 @@ function buildPractice(units, count, allowRepeat = false) {
         const row = entry.unit.f();
         if (row && (allowRepeat || !seen.has(row[0]))) {
           seen.add(row[0]);
-          questions.push([row[0], String(row[1]), row[2] || '=']);
+          const question=[row[0], String(row[1]), row[2] || '='];
+          if(includeSource)question.push(entry.unit.n);
+          questions.push(question);
           entry.misses = 0;
           accepted = true;
           break;

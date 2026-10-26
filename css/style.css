@@ -151,3 +151,5 @@ button:disabled{cursor:not-allowed;opacity:.55}
 @media print{.n{color:#3159a6;border-color:#8298c5;background:#edf2ff;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 
 .p > .n,.answer-item > .n{margin-right:10px}
+.review-hub{margin-top:22px;padding:20px;background:linear-gradient(120deg,#78bca51a,#e9b54b12);border:1px solid var(--bd);border-radius:16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.review-hub>div{flex:1;min-width:200px}.review-hub h3{margin:0}.review-hub p{margin:8px 0}.review-hub details,.review-hub>p{width:100%;font-size:.85rem}.review-hub summary{cursor:pointer}.review-hub ul{padding-left:22px;max-height:240px;overflow:auto}.review-hub li{margin:8px 0;overflow-wrap:anywhere}.star-rules{font-size:.82rem;line-height:1.8;opacity:.75}

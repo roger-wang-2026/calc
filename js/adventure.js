@@ -10,9 +10,9 @@ const ADVENTURE_LEVELS = [
 function adventureUnits(units, level) {
  return units.slice(0, Math.max(1, Math.ceil(units.length * level.coverage)));
 }
-function adventureResult(level, correct, total, answered) {
- const passed=total===level.count && answered===total && correct>=Math.ceil(total*level.target);
- return { passed, stars:passed?(correct===total?3:correct/total>=.9?2:1):0 };
+function adventureResult(level, correct, total, answered, firstCorrect = correct) {
+ const passed=total===level.count && answered===total && correct===total;
+ return {passed,stars:passed?(firstCorrect===total?3:firstCorrect/total>=.8?2:1):0};
 }
 function readAdventureProgress(raw) {
  try {
