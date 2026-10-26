@@ -24,7 +24,7 @@ button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid 
 .g{display:grid;grid-template-columns:repeat(var(--c,2),1fr);gap:10px 18px}
 .p{display:flex;align-items:center;flex-wrap:wrap;gap:6px;font-size:1.25rem;padding:6px 8px;border:1px solid transparent;border-radius:8px;background:var(--card)}
 .s1 .p{min-height:3.2rem}.s2 .p{min-height:6rem}
-.n{color:var(--ac);min-width:2.1em;font-size:.95rem}
+.n{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;width:1.85em;height:1.85em;border:1px solid var(--ac);border-radius:50%;background:var(--grid);color:var(--ac);font-size:.85rem;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
 .p input{width:5.6em;font:inherit;color:inherit;background:transparent;border:0;border-bottom:2px solid var(--bd);padding:2px 4px;border-radius:0;min-height:0}
 .p.ok{border-color:var(--ok)}.p.bad{border-color:var(--bad)}
 .p .m{font-size:.9rem;font-weight:700}.ok .m{color:var(--ok)}.bad .m{color:var(--bad)}
@@ -145,3 +145,7 @@ button:disabled{cursor:not-allowed;opacity:.55}
 .challenge.try-again #challenge-input{border-color:var(--bad)}
 @media(max-width:560px){.challenge{padding:18px;margin:14px auto;border-radius:18px}.challenge-progress{gap:4px}.challenge-question{min-height:120px}.adventure-playing .site-header{padding:10px 0 4px}.adventure-playing .site-header p{display:none}.adventure-playing .mode-switch{margin:10px auto}}
 @media print{.challenge{display:none!important}}
+
+.ans .answer-item{display:flex;align-items:center;gap:8px}
+.ans .n{padding:0;width:1.85em;height:1.85em}
+@media print{.n{color:#3159a6;border-color:#8298c5;background:#edf2ff;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
