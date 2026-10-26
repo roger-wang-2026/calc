@@ -42,7 +42,7 @@ async function createWorksheetPDF(questions,options) {
   ctx.font=font(23);ctx.fillText(options.route,620,128);ctx.textAlign='left';
   if(!page.answers){ctx.font=font(21);ctx.fillText('姓名：____________    日期：____________    用时：________',70,184)}
   page.questions.forEach((q,i)=>{
-   const x=70+(i%page.columns)*(1100/page.columns),y=245+Math.floor(i/page.columns)*page.rowHeight,width=1100/page.columns-74;
+   const x=70+(i%page.columns)*(1100/page.columns),y=245+Math.floor(i/page.columns)*page.rowHeight,width=1100/page.columns-90;
    ctx.save();ctx.beginPath();ctx.arc(x+14,y-8,16,0,Math.PI*2);
    ctx.fillStyle='#edf2ff';ctx.fill();ctx.strokeStyle='#8298c5';ctx.lineWidth=1.5;ctx.stroke();
    ctx.fillStyle='#3159a6';ctx.font=font(19);ctx.textAlign='center';ctx.textBaseline='middle';
@@ -56,7 +56,7 @@ async function createWorksheetPDF(questions,options) {
     if(line)lines.push(line);
     if(lines.length*lineHeight<=page.rowHeight-8)break;
    }
-   lines.forEach((line,j)=>ctx.fillText(line,x+44,y+j*lineHeight));
+   lines.forEach((line,j)=>ctx.fillText(line,x+60,y+j*lineHeight));
   });
   ctx.font=font(18);ctx.textAlign='center';ctx.fillText(`星光算术岛 · 第 ${pageIndex+1} / ${pages.length} 页`,620,1705);
   const jpeg=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',.92));if(!jpeg)throw new Error('无法导出页面');
